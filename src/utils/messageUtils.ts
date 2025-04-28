@@ -2,10 +2,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { MessageType } from '../components/Message';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true
-});
+// const openai = new OpenAI({
+//   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+//   dangerouslyAllowBrowser: true
+// });
 
 export const createMessage = (text: string, isUser: boolean): MessageType => {
   return {
