@@ -11,24 +11,24 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from the Vite build output
+// 1) Serve your Vite build output
 const staticPath = path.join(process.cwd(), 'dist');
 app.use(express.static(staticPath));
 
-// Verify key is loaded at startup
+// 2) Verify key is loaded
 console.log('🔑 OPENAI_API_KEY loaded?', !!process.env.OPENAI_API_KEY);
 
-// Instantiate the OpenAI client (v4 SDK)
+// 3) Instantiate OpenAI (v4 SDK)
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Health check endpoint
+// 4) Health check
 app.get('/health', (_req, res) => {
     res.json({ apiKeyLoaded: !!process.env.OPENAI_API_KEY });
 });
 
-// Chat endpoint
+// 5) Chat endpoint
 app.post('/api/chat', async (req, res) => {
     try {
         const { message } = req.body;
@@ -37,26 +37,27 @@ app.post('/api/chat', async (req, res) => {
             messages: [
                 {
                     role: 'system',
-                    content: 'You are OrionHT, an AI assistant with a unique style—helpful, creative, direct, and concise.',
+                    content:
+                        'You are OrionHT, an AI assistant with a unique style—helpful, creative, direct, and concise.',
                 },
-                {
-                    role: 'user',
-                    content: message,
-                },
+                { role: 'user', content: message },
             ],
         });
-        const reply = completion.choices[0].message.content;
-        res.json({ reply });
+        res.json({ reply: completion.choices[0].message.content });
     } catch (err) {
         console.error('❌ OpenAI error:', err);
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        res.status(500).json({ error: errorMessage });
+        const msg = err instanceof Error ? err.message : String(err);
+        res.status(500).json({ error: msg });
     }
 });
 
-// Fallback to index.html for any other route (for SPA client‐side routing)
-app.get('*', (_req, res) => {
-    res.sendFile(path.join(staticPath, 'index.html'));
+// 6) SPA fallback (no '*' string)
+//    Only for GET requests not hitting '/api/*', serve index.html:
+app.use((req, res, next) => {
+    if (req.method === 'GET' && !req.path.startsWith('/api')) {
+        return res.sendFile(path.join(staticPath, 'index.html'));
+    }
+    next();
 });
 
 const PORT = process.env.PORT || 8080;
