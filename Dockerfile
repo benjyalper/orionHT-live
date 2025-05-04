@@ -1,21 +1,36 @@
-# Use Node.js 18 Alpine image
-FROM node:18-alpine
-
-# Create app directory inside the container
+# 1) Build the Vite app
+FROM node:18-alpine AS builder
 WORKDIR /app
 
-# Install dependencies
-COPY package*.json ./
+# Copy in package files and install everything
+COPY package.json package-lock.json ./
 RUN npm install
 
-# Copy the whole app
+# Copy source and build front-end
 COPY . .
-
-# Build the Vite app
 RUN npm run build
 
-# Install serve globally to serve the built app
-RUN npm install -g serve
+# 2) Prepare production image
+FROM node:18-alpine AS production
+WORKDIR /app
 
-# Serve the app from the dist folder
-CMD ["serve", "-s", "dist", "-l", "8080"]
+# Copy only production dependencies
+COPY package.json package-lock.json ./
+RUN npm install --production
+
+# Copy built front-end from builder
+COPY --from=builder /app/dist ./dist
+
+# Copy your Express server code
+COPY server.js ./
+
+# If you need dotenv locally, you can optionally copy .env (but don't commit it)
+# COPY .env .env
+
+# Make sure server.js uses something like:
+#   app.use(express.static(path.join(process.cwd(), 'dist')));
+
+EXPOSE 8080
+
+# Start the Express server, which will serve both /api and the static files.
+CMD ["node", "server.js"]
