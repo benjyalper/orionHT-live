@@ -1,12 +1,11 @@
+// src/utils/messageUtils.ts
+
 import { v4 as uuidv4 } from 'uuid';
 import { MessageType } from '../components/Message';
-import OpenAI from 'openai';
 
-// const openai = new OpenAI({
-//   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-//   dangerouslyAllowBrowser: true
-// });
-
+/**
+ * Factory for a chat message object
+ */
 export const createMessage = (text: string, isUser: boolean): MessageType => {
   return {
     id: uuidv4(),
@@ -16,25 +15,27 @@ export const createMessage = (text: string, isUser: boolean): MessageType => {
   };
 };
 
+/**
+ * Send the user’s message to your Express backend
+ * which holds the OPENAI_API_KEY, and return the AI’s reply.
+ */
 export const generateAIResponse = async (userMessage: string): Promise<string> => {
   try {
-    const completion = await openai.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content: "You are OrionHT, an AI assistant with a unique style. You're helpful, creative, and provide accurate responses while maintaining a slightly different approach from other AI assistants. You're direct and concise in your responses."
-        },
-        {
-          role: "user",
-          content: userMessage
-        }
-      ],
-      model: "gpt-3.5-turbo",
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: userMessage }),
     });
 
-    return completion.choices[0].message.content || "I apologize, but I couldn't generate a response at this time.";
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`API Error ${res.status}: ${errText}`);
+    }
+
+    const { reply } = (await res.json()) as { reply: string };
+    return reply;
   } catch (error) {
     console.error('Error generating AI response:', error);
-    return "I apologize, but I encountered an error while processing your request. Please try again.";
+    return "I’m sorry, I ran into a problem. Please try again.";
   }
 };
