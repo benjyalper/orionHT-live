@@ -2,11 +2,11 @@
 FROM node:18-alpine AS builder
 WORKDIR /app
 
-# Copy in package files and install everything
+# Copy package files & install all deps
 COPY package.json package-lock.json ./
 RUN npm install
 
-# Copy source and build front-end
+# Copy everything & build
 COPY . .
 RUN npm run build
 
@@ -14,23 +14,15 @@ RUN npm run build
 FROM node:18-alpine AS production
 WORKDIR /app
 
-# Copy only production dependencies
+# Install only prod deps
 COPY package.json package-lock.json ./
 RUN npm install --production
 
-# Copy built front-end from builder
+# Copy built front-end and server code
 COPY --from=builder /app/dist ./dist
-
-# Copy your Express server code
-COPY server.js ./
-
-# If you need dotenv locally, you can optionally copy .env (but don't commit it)
-# COPY .env .env
-
-# Make sure server.js uses something like:
-#   app.use(express.static(path.join(process.cwd(), 'dist')));
+COPY --from=builder /app/server.js ./server.js
 
 EXPOSE 8080
 
-# Start the Express server, which will serve both /api and the static files.
+# Run your combined front-end + API server
 CMD ["node", "server.js"]
