@@ -4,7 +4,9 @@ import react from '@vitejs/plugin-react';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: '/orionHT-live/',
+  base: process.env.NODE_ENV === 'production'
+    ? '/'                 // on Railway & any other root‐served host
+    : '/orionHT-live/',
   plugins: [react()],
   optimizeDeps: {
     exclude: ['lucide-react'],
